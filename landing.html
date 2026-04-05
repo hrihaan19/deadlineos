@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DeadlineOS — A scheduler that learns your procrastination patterns</title>
+  <meta name="description" content="DeadlineOS builds your study schedule, tracks planned vs actual hours, and gets smarter every week. Built for students who are done lying to themselves.">
+  <meta property="og:title" content="DeadlineOS — Stop planning to be a better student.">
+  <meta property="og:description" content="A scheduler that learns your procrastination patterns and plans around them.">
+  <meta property="og:type" content="website">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080b14">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%23080b14'/><rect x='6' y='6' width='4' height='20' rx='2' fill='%23e94560'/><rect x='13' y='10' width='13' height='2' rx='1' fill='%23e8edf5'/><rect x='13' y='15' width='10' height='2' rx='1' fill='%23e8edf5' opacity='0.6'/><rect x='13' y='20' width='7' height='2' rx='1' fill='%23e8edf5' opacity='0.3'/></svg>">
+
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #000;
+      color: #fff;
+      overflow-x: hidden;
+      opacity: 0;
+      animation: bodyFadeIn 0.3s ease-out 0ms forwards;
+    }
+    @keyframes bodyFadeIn {
+      from { opacity: 0; background: #000; }
+      to   { opacity: 1; background: #080b14; }
+    }
+
+    /* ── NAV ── */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px;
+      background: transparent;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      z-index: 1000;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transform: translateY(-52px);
+      transition: background 0.3s ease, transform 0s;
+      animation: navSlideDown 0.3s ease-out 150ms forwards;
+    }
+    @keyframes navSlideDown {
+      from { transform: translateY(-52px); }
+      to   { transform: translateY(0); }
+    }
+    #nav.scrolled { background: rgba(8,11,20,0.95); }
+    .nav-logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700; font-size: 15px;
+      letter-spacing: 0.08em; color: white;
+      display: flex; align-items: center; gap: 6px;
+      text-decoration: none;
+    }
+    .nav-logo-mark { color: #e94560; }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; color: rgba(255,255,255,0.5);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: white; }
+    .nav-cta {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #e94560;
+      background: rgba(233,69,96,0.1);
+      border: 1px solid rgba(233,69,96,0.6);
+      padding: 8px 18px;
+      border-radius: 4px;
+      text-decoration: none;
+      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .nav-cta:hover {
+      background: rgba(233,69,96,0.2);
+      border-color: #e94560;
+      box-shadow: 0 0 20px rgba(233,69,96,0.15);
+    }
+    @media (max-width: 768px) {
+      #nav { padding: 0 20px; }
+      .nav-links { display: none; }
+    }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      background-color: #080b14;
+      background-image:
+        linear-gradient(rgba(30,45,74,0.3) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30,45,74,0.3) 1px, transparent 1px);
+      background-size: 40px 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding: 80px 80px 0 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    @media (max-width: 768px) {
+      #hero {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+        padding: 80px 24px 40px;
+        min-height: 100vh;
+        align-content: start;
+        gap: 40px;
+      }
+    }
+
+    .hero-copy {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: heroFadeUp 0.6s ease-out 400ms forwards;
+    }
+    @keyframes heroFadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .hero-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.14em;
+      color: rgba(233,69,96,0.8);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: heroFadeUp 0.3s ease-out 800ms forwards;
+    }
+    .hero-h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(48px, 5.5vw, 72px);
+      font-weight: 800;
+      line-height: 0.95;
+      color: white;
+      margin-bottom: 22px;
+      overflow: hidden;
+    }
+    .hero-h1 .accent { color: #e94560; }
+    .hero-h1 .word {
+      display: inline-block;
+      clip-path: inset(100% 0 0 0);
+      animation: wordReveal 0.5s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    @keyframes wordReveal {
+      to { clip-path: inset(0% 0 0 0); }
+    }
+    .hero-sub {
+      font-family: 'Inter', sans-serif;
+      font-size: 18px; color: rgba(255,255,255,0.5);
+      line-height: 1.6; max-width: 380px;
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: heroFadeUp 0.4s ease-out 1400ms forwards;
+    }
+    .hero-buttons {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      opacity: 0;
+      transform: scale(0.95);
+      animation: buttonIn 0.3s ease-out 1700ms forwards;
+    }
+    @keyframes buttonIn {
+      to { opacity: 1; transform: scale(1); }
+    }
+    .btn-primary-hero {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 600;
+      background: #e94560; color: white;
+      padding: 14px 28px; border-radius: 4px;
+      border: none; cursor: pointer;
+      text-decoration: none; display: inline-block;
+      transition: filter 0.15s, transform 0.15s;
+    }
+    .btn-primary-hero:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-primary-hero:active { transform: scale(0.98); }
+    .btn-secondary-hero {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 500;
+      background: transparent; color: rgba(255,255,255,0.6);
+      padding: 14px 28px; border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.15); cursor: pointer;
+      text-decoration: none; display: inline-block;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-secondary-hero:hover { border-color: rgba(255,255,255,0.4); color: white; }
+    .hero-micro {
+      margin-top: 24px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px; color: rgba(255,255,255,0.3);
+      letter-spacing: 0.04em;
+      opacity: 0;
+      animation: heroFadeUp 0.3s ease-out 2000ms forwards;
+    }
+
+    /* Three.js canvas container */
+    .hero-canvas-wrap {
+      position: relative;
+      height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0;
+      animation: heroFadeUp 0.4s ease-out 600ms forwards;
+    }
+    #hero-canvas {
+      width: 100%; height: 100%;
+      display: block;
+    }
+    @media (max-width: 768px) {
+      .hero-canvas-wrap { height: 60vw; order: -1; }
+    }
+
+    /* ── NUDGE STRIP ── */
+    #nudge-strip {
+      background: #0e1525;
+      border-top: 1px solid #1e2d4a;
+      border-bottom: 1px solid #1e2d4a;
+      padding: 20px 60px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .nudge-strip-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; letter-spacing: 0.14em;
+      color: #e94560; flex-shrink: 0;
+      text-transform: uppercase;
+    }
+    .nudge-strip-dot { color: rgba(255,255,255,0.2); flex-shrink: 0; }
+    .nudge-strip-text {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px; font-style: italic;
+      color: rgba(255,255,255,0.7);
+    }
+    @media (max-width: 768px) {
+      #nudge-strip { padding: 16px 24px; flex-direction: column; align-items: flex-start; gap: 8px; }
+    }
+
+    /* ── STATS BAR ── */
+    #stats-bar {
+      background: #080b14;
+      border-top: 1px solid #1e2d4a;
+      border-bottom: 1px solid #1e2d4a;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+    .stat-item {
+      padding: 60px 48px;
+      border-right: 1px solid #1e2d4a;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(36px, 4.5vw, 56px);
+      font-weight: 700; color: white;
+      line-height: 1; margin-bottom: 10px;
+    }
+    .stat-number.teal { color: #16c79a; }
+    .stat-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; color: rgba(255,255,255,0.4);
+      line-height: 1.6; max-width: 200px;
+    }
+    @media (max-width: 768px) {
+      #stats-bar { grid-template-columns: 1fr; }
+      .stat-item { border-right: none; border-bottom: 1px solid #1e2d4a; padding: 40px 24px; }
+      .stat-item:last-child { border-bottom: none; }
+    }
+
+    /* ── HOW IT WORKS ── */
+    #how-it-works {
+      background: #080b14;
+      padding: 120px 80px;
+    }
+    @media (max-width: 768px) { #how-it-works { padding: 60px 24px; } }
+
+    .section-eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(255,255,255,0.3); margin-bottom: 16px;
+    }
+    .hiw-headline {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(36px, 4vw, 56px);
+      font-weight: 800; line-height: 1;
+      color: white; text-align: center;
+      margin-bottom: 0;
+    }
+    .hiw-headline .teal { color: #16c79a; }
+    .hiw-sub {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px; color: rgba(255,255,255,0.45);
+      max-width: 480px; margin: 16px auto 60px;
+      text-align: center; line-height: 1.7;
+    }
+    .hiw-steps {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2px;
+    }
+    @media (max-width: 768px) { .hiw-steps { grid-template-columns: 1fr; } }
+
+    .hiw-step {
+      background: #0e1525;
+      border: 1px solid #1e2d4a;
+      padding: 36px 32px;
+    }
+    .hiw-step:first-child { border-radius: 8px 0 0 8px; }
+    .hiw-step:last-child { border-radius: 0 8px 8px 0; }
+    @media (max-width: 768px) {
+      .hiw-step { border-radius: 0 !important; }
+      .hiw-step:first-child { border-radius: 8px 8px 0 0 !important; }
+      .hiw-step:last-child { border-radius: 0 0 8px 8px !important; }
+    }
+    .hiw-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; color: rgba(255,255,255,0.2);
+      margin-bottom: 20px;
+    }
+    .hiw-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 600; color: white;
+      margin-bottom: 12px;
+    }
+    .hiw-body {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px; color: rgba(255,255,255,0.45);
+      line-height: 1.7; margin-bottom: 28px;
+    }
+
+    /* Mini visual: step 1 — task intake form */
+    .mini-intake {
+      background: #080b14;
+      border: 1px solid #1e2d4a;
+      border-radius: 6px;
+      padding: 14px;
+    }
+    .mini-field {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 3px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: rgba(255,255,255,0.6);
+      display: flex; align-items: center; justify-content: space-between;
+      min-height: 32px;
+    }
+    .mini-field .cursor {
+      display: inline-block; width: 6px; height: 12px;
+      background: #e94560; border-radius: 1px;
+      animation: blink 1s step-end infinite;
+      vertical-align: middle; margin-left: 2px;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .mini-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; font-weight: 700;
+      padding: 2px 6px; border-radius: 2px;
+      background: rgba(233,69,96,0.15); color: #e94560;
+      letter-spacing: 0.06em;
+    }
+    .mini-badge.fire { background: rgba(255,61,0,0.15); color: #ff3d00; }
+
+    /* Mini visual: step 2 — week grid */
+    .mini-week {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .mini-day-col { display: flex; flex-direction: column; gap: 3px; }
+    .mini-day-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px; color: rgba(255,255,255,0.3);
+      text-align: center; margin-bottom: 4px;
+    }
+    .mini-block {
+      height: 22px; border-radius: 2px;
+      opacity: 0;
+      animation: blockAppear 0.3s ease forwards;
+    }
+    @keyframes blockAppear { to { opacity: 1; } }
+
+    /* Mini visual: step 3 — bar chart */
+    .mini-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 80px;
+      padding: 0 4px;
+    }
+    .mini-chart-group { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; }
+    .mini-bars { display: flex; gap: 2px; align-items: flex-end; height: 64px; }
+    .mini-bar {
+      width: 10px; border-radius: 2px 2px 0 0;
+      transform: scaleY(0); transform-origin: bottom;
+      transition: transform 0.6s cubic-bezier(0.16,1,0.3,1);
+    }
+    .mini-bar.animate { transform: scaleY(1); }
+    .mini-bar.planned { background: rgba(61,126,255,0.7); }
+    .mini-bar.actual  { background: rgba(245,166,35,0.8); }
+    .mini-chart-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px; color: rgba(255,255,255,0.3);
+      text-align: center;
+    }
+    .mini-insight {
+      margin-top: 8px; padding: 6px 8px;
+      background: rgba(233,69,96,0.08);
+      border-left: 2px solid #e94560;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; color: rgba(255,255,255,0.5);
+      border-radius: 0 2px 2px 0;
+    }
+
+    /* ── PROCRASTINATION SCORE ── */
+    #procrastination-score {
+      background: radial-gradient(ellipse at 50% 100%, rgba(233,69,96,0.08) 0%, transparent 70%), #0a0f1e;
+      padding: 120px 80px;
+      text-align: center;
+    }
+    @media (max-width: 768px) { #procrastination-score { padding: 60px 24px; } }
+
+    .score-eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: rgba(255,255,255,0.3); margin-bottom: 20px;
+    }
+    .score-display {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(56px, 10vw, 96px);
+      font-weight: 800; line-height: 0.9;
+      color: white;
+      margin-bottom: 0;
+    }
+    .score-display.accent { color: #e94560; }
+    .score-sub {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px; color: rgba(255,255,255,0.5);
+      max-width: 500px; margin: 24px auto 40px;
+      line-height: 1.7;
+    }
+    .ai-insight-card {
+      display: inline-block;
+      background: #0e1525;
+      border: 1px solid #1e2d4a;
+      border-top: 2px solid #e94560;
+      border-radius: 6px;
+      padding: 22px 28px;
+      text-align: left;
+      max-width: 520px;
+      transform: perspective(800px) rotateX(8deg);
+      transition: transform 0.4s ease;
+      cursor: default;
+    }
+    .ai-insight-card:hover { transform: perspective(800px) rotateX(0deg); }
+    .ai-card-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; letter-spacing: 0.14em;
+      color: rgba(255,255,255,0.3); margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+    .ai-card-line {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; color: #16c79a;
+      line-height: 1.8; min-height: 23px;
+    }
+    .ai-cursor {
+      display: inline-block; width: 7px; height: 14px;
+      background: #16c79a; border-radius: 1px;
+      animation: blink 1s step-end infinite;
+      vertical-align: text-bottom; margin-left: 2px;
+    }
+
+    /* ── SOCIAL PROOF ── */
+    #social-proof {
+      background: #080b14;
+      padding: 120px 80px;
+    }
+    @media (max-width: 768px) { #social-proof { padding: 60px 24px; } }
+
+    .proof-headline {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(32px, 4vw, 48px);
+      font-weight: 800; line-height: 1.1; margin-bottom: 60px;
+    }
+    .proof-headline .dim { color: rgba(255,255,255,0.4); }
+
+    .notes-pile {
+      position: relative;
+      height: 480px;
+      overflow: visible;
+    }
+    @media (max-width: 1024px) {
+      .notes-pile { height: auto; display: flex; flex-direction: column; gap: 16px; }
+    }
+
+    .note-card {
+      background: #0e1525;
+      border: 1px solid #1e2d4a;
+      border-radius: 4px;
+      padding: 22px 22px 22px 26px;
+      width: 278px;
+      position: absolute;
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s;
+      z-index: 1;
+    }
+    .note-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: 4px 0 0 4px;
+    }
+    /* True scattered desk layout */
+    .note-card:nth-child(1) { top: 30px;  left: 0px;   transform: rotate(-4deg);   z-index: 3; }
+    .note-card:nth-child(2) { top: 10px;  left: 250px; transform: rotate(2.5deg);  z-index: 2; }
+    .note-card:nth-child(3) { top: 55px;  left: 490px; transform: rotate(-2deg);   z-index: 4; }
+    .note-card:nth-child(4) { top: 20px;  left: 730px; transform: rotate(3.5deg);  z-index: 2; }
+    .note-card:nth-child(5) { top: 210px; left: 130px; transform: rotate(-1.5deg); z-index: 5; }
+    .note-card:hover {
+      transform: translateY(-10px) rotate(0deg) !important;
+      z-index: 10 !important;
+    }
+    .note-card:nth-child(1)::before { background: #e94560; }
+    .note-card:nth-child(2)::before { background: #f5a623; }
+    .note-card:nth-child(3)::before { background: #3d7eff; }
+    .note-card:nth-child(4)::before { background: #16c79a; }
+    .note-card:nth-child(5)::before { background: #e94560; }
+    .note-card:nth-child(1):hover { box-shadow: 0 24px 48px rgba(233,69,96,0.2), 0 0 0 1px rgba(233,69,96,0.3); }
+    .note-card:nth-child(2):hover { box-shadow: 0 24px 48px rgba(245,166,35,0.2), 0 0 0 1px rgba(245,166,35,0.3); }
+    .note-card:nth-child(3):hover { box-shadow: 0 24px 48px rgba(61,126,255,0.2), 0 0 0 1px rgba(61,126,255,0.3); }
+    .note-card:nth-child(4):hover { box-shadow: 0 24px 48px rgba(22,199,154,0.2), 0 0 0 1px rgba(22,199,154,0.3); }
+    .note-card:nth-child(5):hover { box-shadow: 0 24px 48px rgba(233,69,96,0.2), 0 0 0 1px rgba(233,69,96,0.3); }
+
+    .note-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px; color: rgba(255,255,255,0.4);
+      margin-bottom: 10px;
+    }
+    .note-text {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px; color: white;
+      font-style: italic; line-height: 1.65;
+    }
+    @media (max-width: 1024px) {
+      .note-card { position: static; width: 100%; transform: none !important; }
+      .note-card:hover { transform: translateY(-4px) !important; }
+    }
+
+    /* ── FEATURE GRID ── */
+    #features {
+      background: #080b14;
+      padding: 120px 80px;
+      border-top: 1px solid #1e2d4a;
+    }
+    @media (max-width: 768px) { #features { padding: 60px 24px; } }
+
+    .features-headline {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(32px, 3.5vw, 44px);
+      font-weight: 800; color: white;
+      margin-bottom: 48px; line-height: 1;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+    }
+    @media (max-width: 768px) { .feature-grid { grid-template-columns: 1fr; } }
+
+    .feature-tile {
+      background: #0e1525;
+      border: 1px solid #1e2d4a;
+      border-radius: 0;
+      padding: 28px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-tile:nth-child(1) { border-radius: 8px 0 0 0; }
+    .feature-tile:nth-child(2) { border-radius: 0 8px 0 0; }
+    .feature-tile:nth-child(3) { border-radius: 0 0 0 8px; }
+    .feature-tile:nth-child(4) { border-radius: 0 0 8px 0; }
+    .feature-tile:hover { border-color: #2a4080; transform: translateY(-4px); }
+    @media (max-width: 768px) {
+      .feature-tile { border-radius: 0 !important; }
+      .feature-tile:first-child { border-radius: 8px 8px 0 0 !important; }
+      .feature-tile:last-child { border-radius: 0 0 8px 8px !important; }
+    }
+
+    .feature-icon {
+      width: 32px; height: 32px;
+      margin-bottom: 18px;
+    }
+    .feature-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 17px; font-weight: 600; color: white;
+      margin-bottom: 10px;
+    }
+    .feature-body {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px; color: rgba(255,255,255,0.45);
+      line-height: 1.7;
+    }
+
+    /* ── CTA SECTION ── */
+    #cta-section {
+      padding: 120px 80px;
+      text-align: center;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(233,69,96,0.12) 0%, transparent 60%),
+        #080b14;
+      border-top: 1px solid #1e2d4a;
+    }
+    @media (max-width: 768px) { #cta-section { padding: 60px 24px; } }
+
+    .cta-headline {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(40px, 5.5vw, 64px);
+      font-weight: 800; line-height: 0.95;
+      color: white; margin-bottom: 0;
+    }
+    .cta-headline .accent { color: #e94560; }
+    .cta-sub {
+      font-family: 'Inter', sans-serif;
+      font-size: 18px; color: rgba(255,255,255,0.4);
+      max-width: 480px; margin: 28px auto 0;
+      line-height: 1.7;
+    }
+    .cta-form-wrap {
+      max-width: 440px; margin: 40px auto 0;
+      display: flex;
+    }
+    .cta-input {
+      flex: 1; background: #0e1525;
+      border: 1px solid #1e2d4a;
+      border-right: none;
+      color: white;
+      font-family: 'Inter', sans-serif; font-size: 14px;
+      padding: 14px 18px;
+      border-radius: 4px 0 0 4px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .cta-input::placeholder { color: rgba(255,255,255,0.3); }
+    .cta-input:focus { border-color: #e94560; }
+    .cta-btn {
+      background: #e94560; color: white;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 600;
+      padding: 14px 24px;
+      border: none; cursor: pointer;
+      border-radius: 0 4px 4px 0;
+      white-space: nowrap;
+      transition: filter 0.15s;
+    }
+    .cta-btn:hover { filter: brightness(1.1); }
+    .cta-success {
+      display: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px; color: #16c79a;
+      margin-top: 20px;
+    }
+    .cta-micro {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px; color: rgba(255,255,255,0.2);
+      margin-top: 16px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #050810;
+      border-top: 1px solid #1e2d4a;
+      padding: 40px 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    @media (max-width: 768px) { footer { padding: 32px 24px; flex-direction: column; align-items: flex-start; } }
+    .footer-left { display: flex; flex-direction: column; gap: 6px; }
+    .footer-tagline {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; color: rgba(255,255,255,0.3);
+    }
+    .footer-right { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; color: rgba(255,255,255,0.4);
+      text-decoration: none; transition: color 0.2s;
+    }
+    .footer-links a:hover { color: white; }
+    .footer-copy {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px; color: rgba(255,255,255,0.2);
+    }
+
+    /* ── SCROLL ANIMATIONS ── */
+    .animate-on-scroll {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .animate-on-scroll.visible { opacity: 1; transform: translateY(0); }
+
+    #nudge-strip .nudge-inner {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      opacity: 0;
+      transform: translateX(-40px);
+      transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1);
+    }
+    #nudge-strip.visible .nudge-inner { opacity: 1; transform: translateX(0); }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav id="nav">
+  <a href="#" class="nav-logo">
+    <span class="nav-logo-mark">■</span> DEADLINEOS
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How it works</a>
+    <a href="#cta-section" class="nav-cta">Get Early Access →</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div class="hero-copy">
+    <div class="hero-label">Student Productivity</div>
+    <h1 class="hero-h1" id="hero-h1">
+      <span class="word" style="animation-delay:1000ms">A scheduler </span>
+      <span class="word" style="animation-delay:1080ms">that plans</span><br>
+      <span class="word" style="animation-delay:1160ms">around who</span>
+      <span class="word" style="animation-delay:1240ms"> you</span><br>
+      <span class="word accent" style="animation-delay:1320ms">actually are.</span>
+    </h1>
+    <p class="hero-sub">Not who you wish you were.</p>
+    <div class="hero-buttons">
+      <a href="#cta-section" class="btn-primary-hero">Get Early Access →</a>
+      <a href="#how-it-works" class="btn-secondary-hero">See it work ↓</a>
+    </div>
+    <div class="hero-micro">↓ scroll &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Free while in beta</div>
+  </div>
+  <div class="hero-canvas-wrap">
+    <canvas id="hero-canvas"></canvas>
+  </div>
+</section>
+
+<!-- ── NUDGE STRIP ── -->
+<div id="nudge-strip">
+  <div class="nudge-inner">
+    <span class="nudge-strip-label">// DEADLINEOS DAILY</span>
+    <span class="nudge-strip-dot">·</span>
+    <span class="nudge-strip-text">"It's Tuesday. You have 6.5 hours of work queued. The AP Lang essay isn't going to write itself."</span>
+  </div>
+</div>
+
+<!-- ── STATS BAR ── -->
+<div id="stats-bar">
+  <div class="stat-item animate-on-scroll">
+    <div class="stat-number" id="stat-1">0×</div>
+    <div class="stat-label">avg student underestimates English essays</div>
+  </div>
+  <div class="stat-item animate-on-scroll" style="transition-delay:100ms">
+    <div class="stat-number" id="stat-2">0</div>
+    <div class="stat-label">students on waitlist</div>
+  </div>
+  <div class="stat-item animate-on-scroll" style="transition-delay:200ms">
+    <div class="stat-number teal" id="stat-3">0</div>
+    <div class="stat-label">missed deadlines in beta</div>
+  </div>
+</div>
+
+<!-- ── HOW IT WORKS ── -->
+<section id="how-it-works">
+  <p class="section-eyebrow animate-on-scroll" style="text-align:center">How it works</p>
+  <h2 class="hiw-headline animate-on-scroll">
+    The only scheduler<br>
+    that gets <span class="teal">smarter</span><br>
+    every time you procrastinate.
+  </h2>
+  <p class="hiw-sub animate-on-scroll">
+    Three steps. No setup. Just drop your assignments in and watch the chaos become a plan.
+  </p>
+  <div class="hiw-steps">
+    <!-- Step 1 -->
+    <div class="hiw-step animate-on-scroll">
+      <div class="hiw-num">01</div>
+      <div class="hiw-title">Dump your assignments</div>
+      <div class="hiw-body">Tell DeadlineOS what's due, how long it'll take, and when. That's it. No categories, no complex setup. Just your actual workload.</div>
+      <div class="mini-intake">
+        <div class="mini-field">
+          <span id="typing-text">AP Calc BC<span class="cursor"></span></span>
+        </div>
+        <div class="mini-field" style="gap:6px">
+          <span style="opacity:0.4">Due:</span>
+          <span id="due-text" style="color:#3d7eff">Nov 14</span>
+          &nbsp;&nbsp;
+          <span style="opacity:0.4">Est:</span>
+          <span style="color:#f5a623">2.5h</span>
+        </div>
+        <div class="mini-field" style="justify-content:space-between">
+          <span style="opacity:0.4">Priority</span>
+          <span class="mini-badge fire">🔥 FIRE</span>
+        </div>
+      </div>
+    </div>
+    <!-- Step 2 -->
+    <div class="hiw-step animate-on-scroll" style="transition-delay:100ms">
+      <div class="hiw-num">02</div>
+      <div class="hiw-title">DeadlineOS builds your week</div>
+      <div class="hiw-body">The scheduler fills your calendar with urgency-weighted blocks. High-stakes, close deadlines get priority. Your daily cap is respected.</div>
+      <div class="mini-week" id="mini-week-grid">
+        <div class="mini-day-col"><div class="mini-day-label">M</div></div>
+        <div class="mini-day-col"><div class="mini-day-label">T</div></div>
+        <div class="mini-day-col"><div class="mini-day-label">W</div></div>
+        <div class="mini-day-col"><div class="mini-day-label">T</div></div>
+        <div class="mini-day-col"><div class="mini-day-label">F</div></div>
+        <div class="mini-day-col"><div class="mini-day-label">S</div></div>
+        <div class="mini-day-col"><div class="mini-day-label">S</div></div>
+      </div>
+    </div>
+    <!-- Step 3 -->
+    <div class="hiw-step animate-on-scroll" style="transition-delay:200ms">
+      <div class="hiw-num">03</div>
+      <div class="hiw-title">It learns your patterns</div>
+      <div class="hiw-body">After each week, DeadlineOS compares what you planned to what actually happened. After 2 weeks, it knows you better than you know yourself.</div>
+      <div class="mini-chart" id="mini-chart">
+        <div class="mini-chart-group">
+          <div class="mini-bars">
+            <div class="mini-bar planned" style="height:36px"></div>
+            <div class="mini-bar actual"  style="height:45px"></div>
+          </div>
+          <div class="mini-chart-label">Hist</div>
+        </div>
+        <div class="mini-chart-group">
+          <div class="mini-bars">
+            <div class="mini-bar planned" style="height:28px"></div>
+            <div class="mini-bar actual"  style="height:50px"></div>
+          </div>
+          <div class="mini-chart-label">Lang</div>
+        </div>
+        <div class="mini-chart-group">
+          <div class="mini-bars">
+            <div class="mini-bar planned" style="height:40px"></div>
+            <div class="mini-bar actual"  style="height:44px"></div>
+          </div>
+          <div class="mini-chart-label">Calc</div>
+        </div>
+        <div class="mini-chart-group">
+          <div class="mini-bars">
+            <div class="mini-bar planned" style="height:32px"></div>
+            <div class="mini-bar actual"  style="height:28px"></div>
+          </div>
+          <div class="mini-chart-label">Photo</div>
+        </div>
+      </div>
+      <div class="mini-insight">AP Lang: 1.8× underestimated</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PROCRASTINATION SCORE ── -->
+<section id="procrastination-score">
+  <div class="score-eyebrow animate-on-scroll">Your</div>
+  <div class="score-display animate-on-scroll" style="margin-bottom:4px">PROCRASTINATION</div>
+  <div class="score-display animate-on-scroll" style="margin-bottom:4px">SCORE</div>
+  <div class="score-display animate-on-scroll" style="margin-bottom:4px; color:rgba(255,255,255,0.5); font-size:clamp(32px,5vw,56px)">is</div>
+  <div class="score-display accent animate-on-scroll" id="proc-score-num" style="margin-bottom:8px">2.3×</div>
+  <p class="score-sub animate-on-scroll">
+    You consistently underestimate AP Lang essays by 1.8 hours on average.
+    DeadlineOS figured that out after 3 weeks. And now it plans around it.
+  </p>
+  <div class="ai-insight-card animate-on-scroll" id="ai-card">
+    <div class="ai-card-label">// AI INSIGHT · WEEK 3</div>
+    <div class="ai-card-line" id="ai-line-1"></div>
+    <div class="ai-card-line" id="ai-line-2"></div>
+    <div class="ai-card-line" id="ai-line-3"></div>
+    <div class="ai-card-line" id="ai-line-4"><span class="ai-cursor" id="ai-cursor"></span></div>
+  </div>
+</section>
+
+<!-- ── SOCIAL PROOF ── -->
+<section id="social-proof">
+  <h2 class="proof-headline animate-on-scroll">
+    Real students.<br>
+    <span class="dim">Real procrastination.</span>
+  </h2>
+  <div class="notes-pile">
+    <div class="note-card animate-on-scroll">
+      <div class="note-name">Priya S., HS Junior</div>
+      <div class="note-text">"I used to pull all-nighters every week. DeadlineOS told me I was scheduling 6 hours of work into 2-hour gaps. It was a math problem, not a willpower problem."</div>
+    </div>
+    <div class="note-card animate-on-scroll" style="transition-delay:80ms">
+      <div class="note-name">Marcus T., Senior</div>
+      <div class="note-text">"The procrastination score thing hit different. I scored 2.8× on AP Lang. I literally laughed and then fixed it."</div>
+    </div>
+    <div class="note-card animate-on-scroll" style="transition-delay:160ms">
+      <div class="note-name">Anika R., HS Junior</div>
+      <div class="note-text">"My GPA went up 0.4 points in one semester. I'm not saying it was just this app but."</div>
+    </div>
+    <div class="note-card animate-on-scroll" style="transition-delay:240ms">
+      <div class="note-name">Jordan K., College Freshman</div>
+      <div class="note-text">"Finally an app that doesn't assume I'll magically become a different person."</div>
+    </div>
+    <div class="note-card animate-on-scroll" style="transition-delay:320ms">
+      <div class="note-name">Dev P., Sophomore</div>
+      <div class="note-text">"The conflict resolver told me to ask for an extension on my history paper. I did. It was the right call."</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURE GRID ── -->
+<section id="features">
+  <h2 class="features-headline animate-on-scroll">Built different.</h2>
+  <div class="feature-grid">
+    <div class="feature-tile animate-on-scroll">
+      <svg class="feature-icon" viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="8" width="28" height="3" rx="1.5" fill="#3d7eff" opacity="0.9"/>
+        <rect x="2" y="14" width="20" height="3" rx="1.5" fill="#3d7eff" opacity="0.6"/>
+        <rect x="2" y="20" width="24" height="3" rx="1.5" fill="#3d7eff" opacity="0.4"/>
+        <rect x="26" y="20" width="4" height="3" rx="1.5" fill="#e94560" opacity="0.9"/>
+      </svg>
+      <div class="feature-title">Smart Scheduling</div>
+      <div class="feature-body">Spreads your work across the week automatically, respecting daily hour caps and personal work patterns.</div>
+    </div>
+    <div class="feature-tile animate-on-scroll" style="transition-delay:150ms">
+      <svg class="feature-icon" viewBox="0 0 32 32" fill="none">
+        <path d="M4 28 L10 18 L16 22 L22 10 L28 14" stroke="#16c79a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="28" cy="14" r="2.5" fill="#16c79a"/>
+        <path d="M4 28 L10 18 L16 22 L22 10 L28 14" stroke="#16c79a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.2" style="filter:blur(2px)"/>
+      </svg>
+      <div class="feature-title">Pattern Recognition</div>
+      <div class="feature-body">Tracks planned vs actual hours for every task. After 2 weeks, it knows you better than you know yourself.</div>
+    </div>
+    <div class="feature-tile animate-on-scroll" style="transition-delay:150ms">
+      <svg class="feature-icon" viewBox="0 0 32 32" fill="none">
+        <path d="M8 6h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" stroke="#e94560" stroke-width="1.5" fill="rgba(233,69,96,0.08)"/>
+        <path d="M10 14h12M10 18h8" stroke="#e94560" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M14 26l2 3 2-3" stroke="#e94560" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div class="feature-title">AI Conflict Resolver</div>
+      <div class="feature-body">When deadlines pile up and something has to give, DeadlineOS tells you exactly what to do. Not suggestions. A numbered action plan.</div>
+    </div>
+    <div class="feature-tile animate-on-scroll" style="transition-delay:300ms">
+      <svg class="feature-icon" viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="12" r="6" stroke="#f5a623" stroke-width="1.5" fill="rgba(245,166,35,0.08)"/>
+        <path d="M12 24h8M14 28h4" stroke="#f5a623" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M16 6V4M22.2 9.8l1.4-1.4M25 16h2M22.2 22.2l1.4 1.4" stroke="#f5a623" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      </svg>
+      <div class="feature-title">Daily Nudge</div>
+      <div class="feature-body">One sentence every morning. Specific to your schedule, your load, and your track record. Honest. Never generic.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FINAL CTA ── -->
+<section id="cta-section">
+  <h2 class="cta-headline animate-on-scroll">
+    Stop planning to be<br>a better student.<br>
+    <span class="accent">Start scheduling<br>like one.</span>
+  </h2>
+  <p class="cta-sub animate-on-scroll">
+    DeadlineOS is free while in beta. We're taking a limited number of students before launch. Join now and your data helps make it smarter.
+  </p>
+  <div class="cta-form-wrap animate-on-scroll" id="cta-form-wrap">
+    <input class="cta-input" type="email" id="cta-email" placeholder="your@school.edu">
+    <button class="cta-btn" id="cta-submit">Get Early Access →</button>
+  </div>
+  <div class="cta-success" id="cta-success">✓ You're on the list. We'll be in touch.</div>
+  <p class="cta-micro animate-on-scroll">No credit card. No spam. Just a better schedule.</p>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-left">
+    <a href="#" class="nav-logo" style="font-size:14px">
+      <span class="nav-logo-mark">■</span> DEADLINEOS
+    </a>
+    <span class="footer-tagline">Built by two students at Emerald High School, Dublin CA.</span>
+  </div>
+  <div class="footer-right">
+    <div class="footer-links">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#cta-section">Beta</a>
+    </div>
+    <span class="footer-copy">© 2025 DeadlineOS · All rights reserved</span>
+  </div>
+</footer>
+
+<script>
+// ─── GSAP ScrollTrigger init ──────────────────────────────────────────────────
+gsap.registerPlugin(ScrollTrigger);
+
+// ─── Nav scroll effect ────────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 80);
+});
+
+// ─── Intersection Observer for scroll animations ──────────────────────────────
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+
+// ─── Nudge strip slide-in ──────────────────────────────────────────────────────
+const nudgeObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      document.getElementById('nudge-strip').classList.add('visible');
+      nudgeObs.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.5 });
+nudgeObs.observe(document.getElementById('nudge-strip'));
+
+// ─── Stats count-up (GSAP) ───────────────────────────────────────────────────
+const statsAnimated = { done: false };
+const statsObs = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting && !statsAnimated.done) {
+    statsAnimated.done = true;
+    // Stat 1: 2.3×
+    gsap.to({ val: 0 }, {
+      val: 2.3, duration: 1.2, ease: 'power2.out',
+      onUpdate: function() {
+        document.getElementById('stat-1').textContent = this.targets()[0].val.toFixed(1) + '×';
+      }
+    });
+    // Stat 2: 847
+    gsap.to({ val: 0 }, {
+      val: 847, duration: 1.2, ease: 'power2.out',
+      onUpdate: function() {
+        document.getElementById('stat-2').textContent = Math.floor(this.targets()[0].val);
+      }
+    });
+    // Stat 3: stays 0, pulses
+    document.getElementById('stat-3').textContent = '0';
+    gsap.to('#stat-3', { opacity: 0.4, duration: 0.8, repeat: -1, yoyo: true, ease: 'power1.inOut' });
+  }
+}, { threshold: 0.3 });
+statsObs.observe(document.getElementById('stats-bar'));
+
+// ─── Mini week grid animation ─────────────────────────────────────────────────
+const weekColors = ['#e94560','#f5a623','#3d7eff','#16c79a','#e94560','#f5a623','#3d7eff'];
+const weekData = [
+  [2,1],[1,3],[2,1],[3,1],[2,0],[1,0],[0,0]
+];
+function buildMiniWeek() {
+  const grid = document.getElementById('mini-week-grid');
+  const cols = grid.querySelectorAll('.mini-day-col');
+  cols.forEach((col, i) => {
+    const existing = col.querySelectorAll('.mini-block');
+    existing.forEach(e => e.remove());
+    const count = weekData[i][0];
+    const heights = [22, 18, 26, 20, 22];
+    for (let j = 0; j < count; j++) {
+      const block = document.createElement('div');
+      block.className = 'mini-block';
+      block.style.background = weekColors[i];
+      block.style.height = heights[j % heights.length] + 'px';
+      block.style.opacity = (0.7 - j * 0.15).toString();
+      block.style.animationDelay = (i * 80 + j * 60) + 'ms';
+      col.appendChild(block);
+    }
+  });
+}
+const weekObs = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting) { buildMiniWeek(); weekObs.unobserve(entries[0].target); }
+}, { threshold: 0.5 });
+weekObs.observe(document.getElementById('mini-week-grid'));
+
+// ─── Mini chart animation ─────────────────────────────────────────────────────
+const chartObs = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting) {
+    document.querySelectorAll('.mini-bar').forEach((bar, i) => {
+      setTimeout(() => bar.classList.add('animate'), i * 80);
+    });
+    chartObs.unobserve(entries[0].target);
+  }
+}, { threshold: 0.5 });
+chartObs.observe(document.getElementById('mini-chart'));
+
+// ─── Procrastination score slot machine ──────────────────────────────────────
+const scoreValues = ['1.1×','3.4×','0.8×','2.7×','1.5×','3.1×','0.9×','2.3×'];
+let scoreAnimated = false;
+const scoreObs = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting && !scoreAnimated) {
+    scoreAnimated = true;
+    const el = document.getElementById('proc-score-num');
+    let i = 0;
+    const flicker = setInterval(() => {
+      el.textContent = scoreValues[i % scoreValues.length];
+      i++;
+      if (i >= scoreValues.length - 1) {
+        clearInterval(flicker);
+        el.textContent = '2.3×';
+      }
+    }, 100);
+  }
+}, { threshold: 0.5 });
+scoreObs.observe(document.getElementById('proc-score-num'));
+
+// ─── AI insight card typewriter ───────────────────────────────────────────────
+const aiLines = [
+  'Your AP Lang accuracy: 0.56 (you take 1.8× longer)',
+  'Your Math accuracy: 0.91 (solid)',
+  'Recommendation: add 2h buffer to every Lang task.',
+  'Adjusted schedule below. ↓'
+];
+let aiAnimated = false;
+function typewriterLines(lines, lineEls, ms, done) {
+  let li = 0;
+  function typeLine() {
+    if (li >= lines.length) { done && done(); return; }
+    const el = lineEls[li];
+    const txt = lines[li];
+    let ci = 0;
+    const cursor = document.getElementById('ai-cursor');
+    if (cursor) cursor.style.display = 'none';
+    const t = setInterval(() => {
+      el.textContent = txt.slice(0, ci + 1);
+      ci++;
+      if (ci >= txt.length) {
+        clearInterval(t);
+        li++;
+        setTimeout(typeLine, 120);
+      }
+    }, 35);
+  }
+  typeLine();
+}
+const aiObs = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting && !aiAnimated) {
+    aiAnimated = true;
+    const els = [
+      document.getElementById('ai-line-1'),
+      document.getElementById('ai-line-2'),
+      document.getElementById('ai-line-3'),
+      document.getElementById('ai-line-4'),
+    ];
+    typewriterLines(aiLines, els, 35, () => {
+      const cursor = document.getElementById('ai-cursor');
+      if (cursor) cursor.style.display = 'inline-block';
+    });
+  }
+}, { threshold: 0.4 });
+aiObs.observe(document.getElementById('ai-card'));
+
+// ─── CTA form submit ──────────────────────────────────────────────────────────
+document.getElementById('cta-submit').addEventListener('click', () => {
+  const email = document.getElementById('cta-email').value.trim();
+  if (!email || !email.includes('@')) {
+    document.getElementById('cta-email').style.borderColor = '#e94560';
+    return;
+  }
+  const wrap = document.getElementById('cta-form-wrap');
+  wrap.style.transition = 'opacity 0.3s';
+  wrap.style.opacity = '0';
+  setTimeout(() => {
+    wrap.style.display = 'none';
+    const success = document.getElementById('cta-success');
+    success.style.display = 'block';
+    gsap.from(success, { opacity: 0, y: 10, duration: 0.4, ease: 'power2.out' });
+  }, 300);
+});
+
+// ─── THREE.JS HERO SCENE ──────────────────────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('hero-canvas');
+  const wrap = canvas.parentElement;
+
+  const isMobile = window.innerWidth < 768;
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas, antialias: true, alpha: true
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  const W = wrap.clientWidth || 700;
+  const H = wrap.clientHeight || window.innerHeight;
+  const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 1000);
+  camera.position.z = isMobile ? 10 : 8;
+
+  renderer.setSize(W, H);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0x1a2540, 0.4));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(5, 5, 5);
+  scene.add(dirLight);
+  const redLight = new THREE.PointLight(0xe94560, 0.6);
+  redLight.position.set(-3, 2, 4);
+  scene.add(redLight);
+  const blueLight = new THREE.PointLight(0x3d7eff, 0.4);
+  blueLight.position.set(4, -2, 3);
+  scene.add(blueLight);
+
+  const cardData = [
+    { label: 'AP Calc BC', cls: 'Mathematics', hours: '2.5h', priority: 'HIGH', color: '#e94560' },
+    { label: 'AP Lang Essay', cls: 'English', hours: '4h', priority: 'HIGH', color: '#e94560' },
+    { label: 'Bio Lab Report', cls: 'AP Biology', hours: '3h', priority: 'MED', color: '#f5a623' },
+    { label: 'US History DBQ', cls: 'Social Studies', hours: '2h', priority: 'MED', color: '#f5a623' },
+    { label: 'Photography', cls: 'Arts', hours: '1h', priority: 'LOW', color: '#3d7eff' },
+    { label: 'Calc Test Prep', cls: 'Mathematics', hours: '5h', priority: 'FIRE', color: '#ff3d00' },
+    { label: 'Socratic Prep', cls: 'AP Lang', hours: '1h', priority: 'MED', color: '#f5a623' },
+    { label: 'History DBQ', cls: 'Social Studies', hours: '2h', priority: 'LOW', color: '#3d7eff' },
+    { label: 'Chem Problem Set', cls: 'AP Chemistry', hours: '3h', priority: 'HIGH', color: '#e94560' },
+    { label: 'CS Project', cls: 'Computer Science', hours: '4h', priority: 'HIGH', color: '#e94560' },
+    { label: 'Band Practice', cls: 'Arts', hours: '1h', priority: 'LOW', color: '#3d7eff' },
+    { label: 'French Essay', cls: 'Languages', hours: '2h', priority: 'MED', color: '#f5a623' },
+  ];
+
+  const COUNT = isMobile ? 6 : 12;
+  const data = cardData.slice(0, COUNT);
+
+  function makeCardTexture(d) {
+    const cw = 512, ch = 296;
+    const c = document.createElement('canvas');
+    c.width = cw; c.height = ch;
+    const ctx = c.getContext('2d');
+
+    // Background
+    ctx.fillStyle = '#0e1525';
+    ctx.fillRect(0, 0, cw, ch);
+
+    // Border
+    ctx.strokeStyle = '#1e2d4a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, cw - 2, ch - 2);
+
+    // Priority stripe (left edge)
+    ctx.fillStyle = d.color;
+    ctx.fillRect(0, 0, 6, ch);
+
+    // Label / class
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = '500 22px Inter, sans-serif';
+    ctx.fillText(d.cls.toUpperCase(), 28, 52);
+
+    // Assignment name
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 36px "Space Grotesk", sans-serif';
+    ctx.fillText(d.label, 28, 104);
+
+    // Hours badge (top-right)
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    ctx.beginPath();
+    ctx.roundRect(cw - 120, 22, 96, 36, 4);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '600 22px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(d.hours, cw - 72, 46);
+    ctx.textAlign = 'left';
+
+    // Priority badge
+    const pColors = { HIGH: '#e94560', MED: '#f5a623', LOW: '#3d7eff', FIRE: '#ff3d00' };
+    const pBg     = { HIGH:'rgba(233,69,96,0.15)', MED:'rgba(245,166,35,0.15)', LOW:'rgba(61,126,255,0.15)', FIRE:'rgba(255,61,0,0.15)' };
+    ctx.fillStyle = pBg[d.priority] || 'rgba(255,255,255,0.1)';
+    ctx.beginPath();
+    ctx.roundRect(28, ch - 68, 100, 30, 4);
+    ctx.fill();
+    ctx.fillStyle = pColors[d.priority] || '#fff';
+    ctx.font = '700 18px "JetBrains Mono", monospace';
+    ctx.letterSpacing = '2px';
+    ctx.fillText(d.priority === 'FIRE' ? '🔥 FIRE' : d.priority, 42, ch - 47);
+
+    // Subtle bottom line
+    ctx.fillStyle = '#1e2d4a';
+    ctx.fillRect(28, ch - 24, cw - 56, 1);
+
+    return new THREE.CanvasTexture(c);
+  }
+
+  const group = new THREE.Group();
+  scene.add(group);
+
+  // Card geometry
+  const geo = new THREE.BoxGeometry(2.4, 1.4, 0.04);
+
+  // Grid positions (4 cols × 3 rows)
+  const cols = isMobile ? 3 : 4;
+  const rows = Math.ceil(COUNT / cols);
+  const spacingX = 2.7, spacingY = 1.7;
+  const gridPositions = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (gridPositions.length >= COUNT) break;
+      gridPositions.push(new THREE.Vector3(
+        (c - (cols - 1) / 2) * spacingX,
+        ((rows - 1) / 2 - r) * spacingY,
+        0
+      ));
+    }
+  }
+
+  const cards = [];
+  const chaosPos = [], chaosRot = [], chaosScale = [];
+  const targetPos = [], targetRot = [], targetScale = [];
+
+  data.forEach((d, i) => {
+    const mat = new THREE.MeshStandardMaterial({
+      map: makeCardTexture(d),
+      roughness: 0.4, metalness: 0.1,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+
+    // Chaos start
+    const cx = (Math.random() - 0.5) * 12;
+    const cy = (Math.random() - 0.5) * 10;
+    const cz = (Math.random() - 0.5) * 5;
+    chaosPos.push(new THREE.Vector3(cx, cy, cz));
+    chaosRot.push(new THREE.Euler(
+      (Math.random() - 0.5) * Math.PI * 2,
+      (Math.random() - 0.5) * Math.PI * 2,
+      (Math.random() - 0.5) * Math.PI * 2
+    ));
+    chaosScale.push(0.7 + Math.random() * 0.5);
+
+    mesh.position.copy(chaosPos[i]);
+    mesh.rotation.copy(chaosRot[i]);
+    mesh.scale.setScalar(chaosScale[i]);
+
+    targetPos.push(gridPositions[i].clone());
+    targetRot.push(new THREE.Euler(0, 0, 0));
+    targetScale.push(1.0);
+
+    group.add(mesh);
+    cards.push(mesh);
+  });
+
+  // Animation state
+  let phase = 'chaos'; // 'chaos' → 'organizing' → 'idle'
+  let organizeStart = null;
+  const ORGANIZE_DELAY = 3000;  // 3s after page load
+  const CARD_DURATION = 900;
+  const CARD_STAGGER = 80;
+  let totalOrganizeDuration = CARD_DURATION + (COUNT - 1) * CARD_STAGGER;
+
+  // Mouse parallax
+  let mouseX = 0.5, mouseY = 0.5;
+  let targetRotY = 0, targetRotX = 0;
+  if (!isMobile) {
+    const heroEl = document.getElementById('hero');
+    heroEl.addEventListener('mousemove', (e) => {
+      const rect = heroEl.getBoundingClientRect();
+      mouseX = (e.clientX - rect.left) / rect.width;
+      mouseY = (e.clientY - rect.top) / rect.height;
+    });
+  }
+
+  // Spring easing
+  function easeOutExpo(t) {
+    return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+  }
+
+  // Lerp helpers
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function lerpV3(v, target, t) {
+    v.x = lerp(v.x, target.x, t);
+    v.y = lerp(v.y, target.y, t);
+    v.z = lerp(v.z, target.z, t);
+  }
+
+  let animRunning = true;
+  let lastTime = 0;
+
+  // Pause when hero offscreen
+  const heroObs = new IntersectionObserver((entries) => {
+    animRunning = entries[0].isIntersecting;
+  }, { threshold: 0 });
+  heroObs.observe(document.getElementById('hero'));
+
+  function animate(now) {
+    if (!animRunning) { requestAnimationFrame(animate); return; }
+    requestAnimationFrame(animate);
+
+    const time = now * 0.001;
+
+    // Start organize phase
+    if (phase === 'chaos' && now > ORGANIZE_DELAY) {
+      phase = 'organizing';
+      organizeStart = now;
+    }
+
+    if (phase === 'organizing') {
+      const elapsed = now - organizeStart;
+      let allDone = true;
+      cards.forEach((card, i) => {
+        const cardStart = i * CARD_STAGGER;
+        const t = Math.max(0, Math.min(1, (elapsed - cardStart) / CARD_DURATION));
+        const et = easeOutExpo(t);
+        if (t < 1) allDone = false;
+
+        card.position.x = lerp(chaosPos[i].x, targetPos[i].x, et);
+        card.position.y = lerp(chaosPos[i].y, targetPos[i].y, et);
+        card.position.z = lerp(chaosPos[i].z, targetPos[i].z, et);
+        card.rotation.x = lerp(chaosRot[i].x, 0, et);
+        card.rotation.y = lerp(chaosRot[i].y, 0, et);
+        card.rotation.z = lerp(chaosRot[i].z, 0, et);
+        const s = lerp(chaosScale[i], 1.0, et);
+        card.scale.setScalar(s);
+      });
+      if (allDone) phase = 'idle';
+    }
+
+    if (phase === 'idle') {
+      cards.forEach((card, i) => {
+        const floatY = Math.sin(time * 0.8 + i * 0.4) * 0.06;
+        card.position.y = targetPos[i].y + floatY;
+        card.position.x = targetPos[i].x;
+        card.position.z = targetPos[i].z;
+        card.rotation.y = Math.sin(time * 0.5 + i * 0.3) * 0.015;
+        card.rotation.x = 0;
+        card.rotation.z = 0;
+      });
+    }
+
+    if (phase === 'chaos') {
+      cards.forEach((card, i) => {
+        const speed = 0.2 + i * 0.03;
+        card.rotation.x += 0.003 * speed;
+        card.rotation.y += 0.004 * speed;
+        card.rotation.z += 0.002 * speed;
+      });
+    }
+
+    // Mouse parallax
+    if (!isMobile) {
+      targetRotY += ((mouseX - 0.5) * 0.15 - targetRotY) * 0.05;
+      targetRotX += ((mouseY - 0.5) * -0.08 - targetRotX) * 0.05;
+      group.rotation.y = targetRotY;
+      group.rotation.x = targetRotX;
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  requestAnimationFrame(animate);
+
+  // Resize handler
+  function onResize() {
+    const W2 = wrap.clientWidth;
+    const H2 = wrap.clientHeight;
+    camera.aspect = W2 / H2;
+    camera.updateProjectionMatrix();
+    renderer.setSize(W2, H2);
+  }
+  window.addEventListener('resize', onResize);
+
+})();
+</script>
+</body>
+</html>

@@ -297,18 +297,18 @@ function renderAccuracyChart(perClass) {
         {
           label: 'Planned hrs',
           data: perClass.map((c) => c.planned),
-          backgroundColor: 'rgba(15,52,96,0.7)',
-          borderColor: 'rgba(15,52,96,1)',
-          borderWidth: 1,
-          borderRadius: 3,
+          backgroundColor: 'rgba(0,113,227,0.18)',
+          borderColor: 'rgba(0,113,227,0.85)',
+          borderWidth: 2,
+          borderRadius: 6,
         },
         {
           label: 'Actual hrs',
           data: perClass.map((c) => c.actual),
-          backgroundColor: 'rgba(233,69,96,0.65)',
-          borderColor: 'rgba(233,69,96,1)',
-          borderWidth: 1,
-          borderRadius: 3,
+          backgroundColor: 'rgba(255,69,58,0.15)',
+          borderColor: 'rgba(255,69,58,0.85)',
+          borderWidth: 2,
+          borderRadius: 6,
         },
       ],
     },
@@ -316,7 +316,7 @@ function renderAccuracyChart(perClass) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { color: '#8892a4', font: { family: 'Inter', size: 11 } } },
+        legend: { labels: { color: '#6e6e73', font: { family: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', size: 11 } } },
         tooltip: {
           callbacks: {
             label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}h`,
@@ -325,10 +325,10 @@ function renderAccuracyChart(perClass) {
         },
       },
       scales: {
-        x: { ticks: { color: '#8892a4', font: { size: 10 } }, grid: { color: '#1e2a45' } },
+        x: { ticks: { color: '#6e6e73', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
         y: {
-          ticks: { color: '#8892a4', font: { size: 10 }, callback: (v) => v + 'h' },
-          grid: { color: '#1e2a45' },
+          ticks: { color: '#6e6e73', font: { size: 11 }, callback: (v) => v + 'h' },
+          grid: { color: 'rgba(0,0,0,0.06)' },
           beginAtZero: true,
         },
       },
@@ -354,22 +354,26 @@ function renderTrendChart(weeklyTrend) {
         {
           label: 'Planned hrs',
           data: weeklyTrend.map((w) => w.planned),
-          borderColor: 'rgba(15,52,96,1)',
-          backgroundColor: 'rgba(15,52,96,0.1)',
+          borderColor: 'rgba(0,113,227,0.85)',
+          backgroundColor: 'rgba(0,113,227,0.08)',
           fill: true,
-          tension: 0.35,
-          pointRadius: 3,
-          pointBackgroundColor: 'rgba(15,52,96,1)',
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: 'rgba(0,113,227,1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
         },
         {
           label: 'Actual hrs',
           data: weeklyTrend.map((w) => w.actual),
-          borderColor: 'rgba(233,69,96,1)',
-          backgroundColor: 'rgba(233,69,96,0.08)',
+          borderColor: 'rgba(255,69,58,0.85)',
+          backgroundColor: 'rgba(255,69,58,0.06)',
           fill: true,
-          tension: 0.35,
-          pointRadius: 3,
-          pointBackgroundColor: 'rgba(233,69,96,1)',
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: 'rgba(255,69,58,1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
         },
       ],
     },
@@ -377,13 +381,13 @@ function renderTrendChart(weeklyTrend) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { color: '#8892a4', font: { family: 'Inter', size: 11 } } },
+        legend: { labels: { color: '#6e6e73', font: { family: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', size: 11 } } },
       },
       scales: {
-        x: { ticks: { color: '#8892a4', font: { size: 10 } }, grid: { color: '#1e2a45' } },
+        x: { ticks: { color: '#6e6e73', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
         y: {
-          ticks: { color: '#8892a4', font: { size: 10 }, callback: (v) => v + 'h' },
-          grid: { color: '#1e2a45' },
+          ticks: { color: '#6e6e73', font: { size: 11 }, callback: (v) => v + 'h' },
+          grid: { color: 'rgba(0,0,0,0.06)' },
           beginAtZero: true,
         },
       },
@@ -1210,6 +1214,43 @@ function bindGlobalEvents() {
 
 // ─── Expose for inline onclick ────────────────────────────────────────────────
 window.app = { openTaskDetail };
+
+// ─── 3D Tilt effect on task cards ────────────────────────────────────────────
+function attachTilt(card) {
+  card.addEventListener('mousemove', (e) => {
+    const rect = card.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = (e.clientX - cx) / (rect.width / 2);   // -1 to 1
+    const dy = (e.clientY - cy) / (rect.height / 2);  // -1 to 1
+    const rx = (-dy * 8).toFixed(2);   // tilt on X axis (up/down)
+    const ry = (dx * 10).toFixed(2);   // tilt on Y axis (left/right)
+    card.style.setProperty('--rx', rx + 'deg');
+    card.style.setProperty('--ry', ry + 'deg');
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.setProperty('--rx', '0deg');
+    card.style.setProperty('--ry', '0deg');
+  });
+}
+
+// Re-attach tilt after each render (called after renderWeekGrid)
+function attachAllTilts() {
+  document.querySelectorAll('.task-card:not([data-tilt])').forEach((card) => {
+    card.dataset.tilt = '1';
+    attachTilt(card);
+  });
+}
+
+// Patch renderDashboard to call attachAllTilts after grid renders
+const _origRenderDashboard = window._renderDashboard;
+// We hook via a MutationObserver on #week-grid instead
+const _weekGridObserver = new MutationObserver(() => {
+  attachAllTilts();
+});
+_weekGridObserver.observe(document.getElementById('week-grid') || document.body, {
+  childList: true, subtree: true,
+});
 
 // ─── Modal helpers ────────────────────────────────────────────────────────────
 function openModal(id) {

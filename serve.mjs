@@ -145,7 +145,7 @@ const server = http.createServer((req, res) => {
   }
 
   // Static files
-  let urlPath = req.url === '/' ? '/index.html' : req.url;
+  let urlPath = req.url === '/' ? '/landing.html' : req.url;
   urlPath = urlPath.split('?')[0];
   const filePath = path.join(__dirname, urlPath);
   const ext = path.extname(filePath);

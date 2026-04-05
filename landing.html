@@ -703,6 +703,159 @@
       font-size: 12px; color: rgba(255,255,255,0.2);
     }
 
+    /* ── CTA BUTTONS ── */
+    .cta-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 40px; flex-wrap: wrap; }
+
+    /* ── FOOTER SIGNIN LINK ── */
+    .footer-signin-link {
+      background: none; border: none; color: rgba(255,255,255,0.4);
+      font-family: 'Inter', sans-serif; font-size: 13px;
+      cursor: pointer; padding: 0; transition: color 0.2s;
+    }
+    .footer-signin-link:hover { color: white; }
+
+    /* ── AUTH MODAL ── */
+    .auth-overlay {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(5, 8, 16, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      animation: overlayIn 0.2s ease both;
+    }
+    .auth-overlay.hidden { display: none !important; }
+    @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .auth-panel {
+      background: #0b101f;
+      border: 1px solid #1e2d4a;
+      border-top: 2px solid #e94560;
+      border-radius: 6px;
+      padding: 36px 40px 32px;
+      width: 100%; max-width: 420px;
+      position: relative;
+      animation: panelIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .auth-close {
+      position: absolute; top: 16px; right: 16px;
+      background: rgba(255,255,255,0.06); border: none;
+      color: rgba(255,255,255,0.4); width: 28px; height: 28px;
+      border-radius: 4px; cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .auth-close:hover { background: rgba(255,255,255,0.1); color: white; }
+
+    .auth-brand {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px; font-weight: 700;
+      letter-spacing: 0.08em; color: white;
+      margin-bottom: 4px;
+    }
+    .auth-tagline {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px; color: rgba(255,255,255,0.35);
+      margin-bottom: 24px; line-height: 1.5;
+    }
+    .auth-tabs {
+      display: flex; gap: 2px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid #1e2d4a;
+      border-radius: 4px; padding: 3px;
+      margin-bottom: 24px;
+    }
+    .auth-tab {
+      flex: 1; padding: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 500;
+      color: rgba(255,255,255,0.4);
+      background: none; border: none;
+      border-radius: 3px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .auth-tab.active {
+      background: rgba(255,255,255,0.08);
+      color: white;
+    }
+    .auth-form { display: flex; flex-direction: column; gap: 14px; }
+    .auth-form.hidden { display: none; }
+    .auth-field { display: flex; flex-direction: column; gap: 5px; }
+    .auth-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+    .auth-input {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid #1e2d4a;
+      border-radius: 4px; color: white;
+      font-family: 'Inter', sans-serif; font-size: 14px;
+      padding: 11px 14px; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .auth-input::placeholder { color: rgba(255,255,255,0.2); }
+    .auth-input:focus {
+      border-color: rgba(233,69,96,0.5);
+      box-shadow: 0 0 0 3px rgba(233,69,96,0.08);
+    }
+    .auth-error {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px; color: #e94560;
+      padding: 8px 12px;
+      background: rgba(233,69,96,0.08);
+      border: 1px solid rgba(233,69,96,0.2);
+      border-radius: 4px;
+    }
+    .auth-error.hidden { display: none; }
+    .auth-submit {
+      margin-top: 4px;
+      background: #e94560; color: white;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 13px; border: none;
+      border-radius: 4px; cursor: pointer;
+      transition: filter 0.15s, transform 0.15s;
+      width: 100%;
+    }
+    .auth-submit:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    .auth-submit:active { transform: scale(0.98); }
+    .auth-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 20px 0 14px;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: ''; flex: 1; height: 1px;
+      background: #1e2d4a;
+    }
+    .auth-divider span {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px; color: rgba(255,255,255,0.25);
+    }
+    .auth-demo {
+      width: 100%; padding: 12px;
+      background: rgba(61,126,255,0.07);
+      border: 1px solid rgba(61,126,255,0.25);
+      border-radius: 4px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 500;
+      color: #3d7eff; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .auth-demo:hover { background: rgba(61,126,255,0.12); border-color: rgba(61,126,255,0.4); }
+    .auth-fine {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px; color: rgba(255,255,255,0.2);
+      text-align: center; margin-top: 14px; line-height: 1.5;
+    }
+
     /* ── SCROLL ANIMATIONS ── */
     .animate-on-scroll {
       opacity: 0;
@@ -731,7 +884,7 @@
   <div class="nav-links">
     <a href="#features">Features</a>
     <a href="#how-it-works">How it works</a>
-    <a href="#cta-section" class="nav-cta">Get Early Access →</a>
+    <button class="nav-cta" id="nav-signin-btn">Sign In →</button>
   </div>
 </nav>
 
@@ -748,8 +901,8 @@
     </h1>
     <p class="hero-sub">Not who you wish you were.</p>
     <div class="hero-buttons">
-      <a href="#cta-section" class="btn-primary-hero">Get Early Access →</a>
-      <a href="#how-it-works" class="btn-secondary-hero">See it work ↓</a>
+      <button class="btn-primary-hero" id="hero-signin-btn">Sign In →</button>
+      <button class="btn-secondary-hero" id="hero-demo-btn">Try Demo</button>
     </div>
     <div class="hero-micro">↓ scroll &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Free while in beta</div>
   </div>
@@ -973,14 +1126,13 @@
     <span class="accent">Start scheduling<br>like one.</span>
   </h2>
   <p class="cta-sub animate-on-scroll">
-    DeadlineOS is free while in beta. We're taking a limited number of students before launch. Join now and your data helps make it smarter.
+    Free forever for students. Your data stays on your device. No accounts sold, no ads.
   </p>
-  <div class="cta-form-wrap animate-on-scroll" id="cta-form-wrap">
-    <input class="cta-input" type="email" id="cta-email" placeholder="your@school.edu">
-    <button class="cta-btn" id="cta-submit">Get Early Access →</button>
+  <div class="cta-buttons animate-on-scroll">
+    <button class="btn-primary-hero" id="cta-signin-btn">Sign In to Dashboard →</button>
+    <button class="btn-secondary-hero" id="cta-demo-btn">Try Demo</button>
   </div>
-  <div class="cta-success" id="cta-success">✓ You're on the list. We'll be in touch.</div>
-  <p class="cta-micro animate-on-scroll">No credit card. No spam. Just a better schedule.</p>
+  <p class="cta-micro animate-on-scroll" style="margin-top:20px">No credit card. No spam. Just a better schedule.</p>
 </section>
 
 <!-- ── FOOTER ── -->
@@ -995,11 +1147,65 @@
     <div class="footer-links">
       <a href="#features">Features</a>
       <a href="#how-it-works">How it works</a>
-      <a href="#cta-section">Beta</a>
+      <button class="footer-signin-link" id="footer-signin-btn">Sign In</button>
     </div>
     <span class="footer-copy">© 2025 DeadlineOS · All rights reserved</span>
   </div>
 </footer>
+
+<!-- ── AUTH MODAL ── -->
+<div class="auth-overlay hidden" id="auth-overlay">
+  <div class="auth-panel" id="auth-panel">
+    <button class="auth-close" id="auth-close">✕</button>
+
+    <div class="auth-brand">
+      <span style="color:#e94560">■</span> DEADLINEOS
+    </div>
+    <div class="auth-tagline">A scheduler that plans around who you actually are.</div>
+
+    <!-- Tab strip -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="signin">Sign In</button>
+      <button class="auth-tab" data-tab="signup">Sign Up</button>
+    </div>
+
+    <!-- Sign In -->
+    <div class="auth-form" id="auth-form-signin">
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <input id="auth-email" type="email" class="auth-input" placeholder="you@school.edu" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input id="auth-password" type="password" class="auth-input" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div class="auth-error hidden" id="auth-error-signin"></div>
+      <button class="auth-submit" id="auth-signin-btn">Sign In →</button>
+    </div>
+
+    <!-- Sign Up -->
+    <div class="auth-form hidden" id="auth-form-signup">
+      <div class="auth-field">
+        <label class="auth-label">Name</label>
+        <input id="auth-name" type="text" class="auth-input" placeholder="Your name">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <input id="auth-email-su" type="email" class="auth-input" placeholder="you@school.edu" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input id="auth-password-su" type="password" class="auth-input" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <div class="auth-error hidden" id="auth-error-signup"></div>
+      <button class="auth-submit" id="auth-signup-btn">Create Account →</button>
+    </div>
+
+    <div class="auth-divider"><span>or</span></div>
+    <button class="auth-demo" id="auth-demo-btn">⚡ Continue with demo account</button>
+    <p class="auth-fine">No data leaves your device. Everything is stored locally.</p>
+  </div>
+</div>
 
 <script>
 // ─── GSAP ScrollTrigger init ──────────────────────────────────────────────────
@@ -1165,22 +1371,141 @@ const aiObs = new IntersectionObserver((entries) => {
 }, { threshold: 0.4 });
 aiObs.observe(document.getElementById('ai-card'));
 
-// ─── CTA form submit ──────────────────────────────────────────────────────────
-document.getElementById('cta-submit').addEventListener('click', () => {
-  const email = document.getElementById('cta-email').value.trim();
-  if (!email || !email.includes('@')) {
-    document.getElementById('cta-email').style.borderColor = '#e94560';
+// ─── AUTH SYSTEM ──────────────────────────────────────────────────────────────
+// Mirrors lib/storage.js logic (inlined — landing.html can't import ES modules)
+const USERS_KEY = 'deadlineos_users';
+const USER_KEY  = 'deadlineos_user';
+
+function lsRead(key, fallback) {
+  try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; }
+  catch { return fallback; }
+}
+function lsWrite(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+function doSignIn(email, password) {
+  const users = lsRead(USERS_KEY, []);
+  const user = users.find(u => u.email === email && u.passwordHash === btoa(password));
+  if (!user) throw new Error('Invalid email or password.');
+  const { passwordHash: _, ...safe } = user;
+  lsWrite(USER_KEY, safe);
+  return safe;
+}
+
+function doSignUp(email, password, name) {
+  const users = lsRead(USERS_KEY, []);
+  if (users.find(u => u.email === email)) throw new Error('Email already registered.');
+  const user = {
+    id: crypto.randomUUID(), email, name,
+    passwordHash: btoa(password),
+    createdAt: new Date().toISOString()
+  };
+  users.push(user);
+  lsWrite(USERS_KEY, users);
+  const { passwordHash: _, ...safe } = user;
+  lsWrite(USER_KEY, safe);
+  return safe;
+}
+
+function doDemoLogin() {
+  const demo = { id: 'demo-user', email: 'demo@deadlineos.app', name: 'Demo Student' };
+  lsWrite(USER_KEY, demo);
+  return demo;
+}
+
+function goToDashboard() {
+  window.location.href = '/index.html';
+}
+
+// If already logged in, go straight to dashboard
+if (lsRead(USER_KEY, null)) goToDashboard();
+
+// Modal open/close
+function openAuth() {
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('auth-email').focus(), 100);
+}
+function closeAuth() {
+  document.getElementById('auth-overlay').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+// Wire open buttons
+['nav-signin-btn','hero-signin-btn','cta-signin-btn','footer-signin-btn'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', openAuth);
+});
+
+// Demo shortcut buttons (hero + CTA)
+['hero-demo-btn','cta-demo-btn','auth-demo-btn'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', () => { doDemoLogin(); goToDashboard(); });
+});
+
+document.getElementById('auth-close').addEventListener('click', closeAuth);
+document.getElementById('auth-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('auth-overlay')) closeAuth();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeAuth();
+});
+
+// Tab switching
+document.querySelectorAll('.auth-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const which = tab.dataset.tab;
+    document.getElementById('auth-form-signin').classList.toggle('hidden', which !== 'signin');
+    document.getElementById('auth-form-signup').classList.toggle('hidden', which !== 'signup');
+    document.getElementById('auth-error-signin').classList.add('hidden');
+    document.getElementById('auth-error-signup').classList.add('hidden');
+  });
+});
+
+// Sign In submit
+document.getElementById('auth-signin-btn').addEventListener('click', () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-password').value;
+  const err   = document.getElementById('auth-error-signin');
+  err.classList.add('hidden');
+  try {
+    doSignIn(email, pass);
+    goToDashboard();
+  } catch (e) {
+    err.textContent = e.message;
+    err.classList.remove('hidden');
+  }
+});
+
+// Sign Up submit
+document.getElementById('auth-signup-btn').addEventListener('click', () => {
+  const name  = document.getElementById('auth-name').value.trim();
+  const email = document.getElementById('auth-email-su').value.trim();
+  const pass  = document.getElementById('auth-password-su').value;
+  const err   = document.getElementById('auth-error-signup');
+  err.classList.add('hidden');
+  if (!name || !email || !pass) {
+    err.textContent = 'All fields are required.';
+    err.classList.remove('hidden');
     return;
   }
-  const wrap = document.getElementById('cta-form-wrap');
-  wrap.style.transition = 'opacity 0.3s';
-  wrap.style.opacity = '0';
-  setTimeout(() => {
-    wrap.style.display = 'none';
-    const success = document.getElementById('cta-success');
-    success.style.display = 'block';
-    gsap.from(success, { opacity: 0, y: 10, duration: 0.4, ease: 'power2.out' });
-  }, 300);
+  try {
+    doSignUp(email, pass, name);
+    goToDashboard();
+  } catch (e) {
+    err.textContent = e.message;
+    err.classList.remove('hidden');
+  }
+});
+
+// Enter key submits active form
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('auth-overlay').classList.contains('hidden')) return;
+  const activeTab = document.querySelector('.auth-tab.active')?.dataset.tab;
+  if (activeTab === 'signin') document.getElementById('auth-signin-btn').click();
+  if (activeTab === 'signup') document.getElementById('auth-signup-btn').click();
 });
 
 // ─── THREE.JS HERO SCENE ──────────────────────────────────────────────────────

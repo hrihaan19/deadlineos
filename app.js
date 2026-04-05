@@ -37,7 +37,8 @@ window.addEventListener('DOMContentLoaded', () => {
   if (user) {
     loginSuccess(user);
   } else {
-    show('auth-screen');
+    window.location.href = '/landing.html';
+    return;
   }
   bindGlobalEvents();
 });
@@ -1025,70 +1026,8 @@ function triggerLoadDemo() {
   toast('Demo data loaded! Check My Patterns for stats.', 'success');
 }
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
-function bindAuthEvents() {
-  // Tab switching
-  document.querySelectorAll('.auth-tab').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.auth-tab').forEach((t) => t.classList.remove('active'));
-      tab.classList.add('active');
-      const which = tab.dataset.tab;
-      which === 'signin' ? (show('auth-form-signin'), hide('auth-form-signup')) : (hide('auth-form-signin'), show('auth-form-signup'));
-    });
-  });
-
-  $('signin-btn').addEventListener('click', () => {
-    const email = $('signin-email').value.trim();
-    const pass = $('signin-password').value;
-    try {
-      const user = Storage.signIn(email, pass);
-      loginSuccess(user);
-    } catch (e) {
-      $('signin-error').textContent = e.message;
-      show('signin-error');
-    }
-  });
-
-  $('signup-btn').addEventListener('click', () => {
-    const name = $('signup-name').value.trim();
-    const email = $('signup-email').value.trim();
-    const pass = $('signup-password').value;
-    if (!name || !email || !pass) {
-      $('signup-error').textContent = 'All fields required.';
-      show('signup-error');
-      return;
-    }
-    try {
-      const user = Storage.signUp(email, pass, name);
-      loginSuccess(user);
-    } catch (e) {
-      $('signup-error').textContent = e.message;
-      show('signup-error');
-    }
-  });
-
-  $('demo-login-btn').addEventListener('click', () => {
-    let user;
-    try {
-      user = Storage.signIn('demo@deadlineos.app', 'demo1234');
-    } catch {
-      user = Storage.signUp('demo@deadlineos.app', 'demo1234', 'Demo Student');
-    }
-    loginSuccess(user);
-  });
-
-  // Enter key in auth forms
-  [$('signin-email'), $('signin-password')].forEach((el) => {
-    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('signin-btn').click(); });
-  });
-  [$('signup-name'), $('signup-email'), $('signup-password')].forEach((el) => {
-    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('signup-btn').click(); });
-  });
-}
-
 // ─── Global Event Bindings ────────────────────────────────────────────────────
 function bindGlobalEvents() {
-  bindAuthEvents();
 
   // Nav view switching
   document.querySelectorAll('.nav-link[data-view]').forEach((btn) => {
@@ -1107,7 +1046,7 @@ function bindGlobalEvents() {
   $('settings-btn').addEventListener('click', openSettings);
   $('signout-btn').addEventListener('click', () => {
     Storage.signOut();
-    location.reload();
+    window.location.href = '/landing.html';
   });
 
   // Dashboard controls

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeadlineOS — Deadline-aware student scheduler</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ── Auth Screen ─────────────────────────────────────────────── -->
+  <div id="auth-screen" class="hidden">
+    <div class="auth-card">
+      <div class="auth-logo">DeadlineOS</div>
+      <div class="auth-tagline">A scheduler that plans around who you actually are.</div>
+      <div class="auth-tabs">
+        <div class="auth-tab active" data-tab="signin">Sign In</div>
+        <div class="auth-tab" data-tab="signup">Sign Up</div>
+      </div>
+      <div id="auth-form-signin">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input id="signin-email" type="email" class="form-input" placeholder="you@school.edu" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input id="signin-password" type="password" class="form-input" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div class="form-error hidden" id="signin-error"></div>
+        <button class="btn btn-primary btn-full btn-lg" id="signin-btn">Sign In</button>
+      </div>
+      <div id="auth-form-signup" class="hidden">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input id="signup-name" type="text" class="form-input" placeholder="Your name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input id="signup-email" type="email" class="form-input" placeholder="you@school.edu" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input id="signup-password" type="password" class="form-input" placeholder="••••••••" autocomplete="new-password">
+        </div>
+        <div class="form-error hidden" id="signup-error"></div>
+        <button class="btn btn-primary btn-full btn-lg" id="signup-btn">Create Account</button>
+      </div>
+      <button class="auth-demo-btn" id="demo-login-btn">⚡ Try with demo account</button>
+    </div>
+  </div>
+
+  <!-- ── App Shell ───────────────────────────────────────────────── -->
+  <div id="app-shell" class="hidden">
+
+    <!-- Nav -->
+    <nav id="app-nav">
+      <div class="nav-logo">Deadline<span>OS</span></div>
+      <div class="nav-links">
+        <button class="nav-link active" data-view="dashboard">Dashboard</button>
+        <button class="nav-link" data-view="stats">My Patterns</button>
+      </div>
+      <div class="nav-right">
+        <span class="nav-user" id="nav-user-label"></span>
+        <button class="btn btn-icon" id="settings-btn" title="Settings (⚙)">⚙</button>
+        <button class="btn btn-primary btn-sm" id="new-task-btn">+ New Task</button>
+        <button class="btn btn-ghost btn-sm" id="signout-btn">Sign out</button>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="app-main">
+
+      <!-- ── Dashboard View ──────────────────────────────────────── -->
+      <div id="view-dashboard">
+        <!-- Banners -->
+        <div id="conflict-banner" class="hidden">
+          <span class="icon">⚠</span>
+          <span class="text"><strong id="conflict-count">0</strong> tasks can't fit in your schedule before their deadlines. <span id="conflict-resolver-link" style="cursor:pointer;text-decoration:underline;color:var(--accent);">Ask DeadlineOS to fix it →</span></span>
+          <button class="btn btn-ghost btn-sm" id="conflict-dismiss">Dismiss</button>
+        </div>
+
+        <div id="checkin-banner" class="hidden">
+          <span class="icon">📋</span>
+          <span class="text">How did <strong id="checkin-day-label">yesterday</strong> go? Log your completed work to keep your schedule accurate.</span>
+          <button class="btn btn-sm" style="background:var(--warning);color:#0a0a0a;" id="open-checkin-btn">Log Check-in</button>
+        </div>
+
+        <div id="nudge-widget" class="hidden">
+          <span class="nudge-icon">🤖</span>
+          <div style="flex:1">
+            <div class="nudge-label">DeadlineOS Daily</div>
+            <div class="nudge-text" id="nudge-text">Loading today's nudge…</div>
+          </div>
+          <button class="btn btn-icon btn-sm" id="refresh-nudge-btn" title="Refresh nudge">↻</button>
+        </div>
+
+        <!-- Week Navigation -->
+        <div class="dash-header">
+          <div class="dash-title">Weekly Schedule</div>
+          <div class="week-nav">
+            <button class="btn btn-ghost btn-sm" id="prev-week-btn">← Prev</button>
+            <span class="week-nav-label" id="week-range-label"></span>
+            <button class="btn btn-ghost btn-sm" id="next-week-btn">Next →</button>
+            <button class="btn btn-secondary btn-sm" id="today-btn">Today</button>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-ghost btn-sm" id="load-demo-btn">Load Demo Data</button>
+          </div>
+        </div>
+
+        <!-- 7-column grid -->
+        <div id="week-grid"></div>
+
+        <!-- Overdue Graveyard -->
+        <div id="graveyard" class="hidden">
+          <div class="graveyard-header" id="graveyard-toggle">
+            <span>💀</span>
+            <h3 id="graveyard-title">Overdue &amp; Abandoned</h3>
+            <span id="graveyard-chevron">▾</span>
+          </div>
+          <div id="graveyard-body" class="graveyard-items"></div>
+        </div>
+      </div>
+
+      <!-- ── Stats View ──────────────────────────────────────────── -->
+      <div id="view-stats" class="hidden">
+        <div class="page-header">
+          <div>
+            <div class="page-title">My Patterns</div>
+            <div class="page-sub">Track how accurate your time estimates are over time.</div>
+          </div>
+          <button class="btn btn-secondary" id="get-insight-btn">✦ Get Weekly Insight</button>
+        </div>
+
+        <!-- Weekly AI insight card -->
+        <div class="weekly-insight-card" id="weekly-insight-card" style="display:none">
+          <h3>Weekly AI Insight</h3>
+          <div class="insight-text" id="insight-text"></div>
+        </div>
+
+        <!-- KPI cards -->
+        <div class="stats-grid-top" id="stats-kpi"></div>
+
+        <!-- Charts -->
+        <div class="stats-charts" id="stats-charts-wrap">
+          <div class="chart-card">
+            <h3>Planned vs Actual Hours — By Subject</h3>
+            <div class="chart-wrap"><canvas id="chart-accuracy"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3>Weekly Trend</h3>
+            <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
+          </div>
+        </div>
+
+        <div id="stats-empty" class="empty-state hidden">
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-title">No data yet</div>
+          <div class="empty-state-sub">Complete your first week of daily check-ins to see your procrastination patterns here. Or load the demo data to see what it looks like.</div>
+          <button class="btn btn-secondary mt-3" id="stats-load-demo-btn">Load Demo Data</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ── Modals ──────────────────────────────────────────────────── -->
+
+  <!-- Task Modal -->
+  <div class="modal-overlay hidden" id="modal-task">
+    <div class="modal modal-md">
+      <div class="modal-header">
+        <h2 id="task-modal-title">New Assignment</h2>
+        <button class="modal-close" data-close="modal-task">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="task-edit-id">
+        <div class="form-group">
+          <label class="form-label">Assignment Name *</label>
+          <input id="task-name" type="text" class="form-input" placeholder="e.g. Chapter 5 Problem Set" autofocus>
+          <div class="form-error hidden" id="task-name-err">Required</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Class / Subject *</label>
+          <select id="task-class" class="form-select"></select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Due Date *</label>
+            <input id="task-due" type="date" class="form-input">
+            <div class="form-error hidden" id="task-due-err">Must be today or later</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Estimated Hours *</label>
+            <input id="task-hours" type="number" class="form-input" placeholder="2.5" min="0.5" step="0.5">
+            <div class="form-error hidden" id="task-hours-err">Must be > 0</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <div class="priority-group">
+            <div class="priority-pill low" data-priority="low">Low</div>
+            <div class="priority-pill medium selected" data-priority="medium">Medium</div>
+            <div class="priority-pill high" data-priority="high">High</div>
+            <div class="priority-pill onfire" data-priority="onfire">🔥 On Fire</div>
+          </div>
+          <input type="hidden" id="task-priority" value="medium">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes (optional)</label>
+          <textarea id="task-notes" class="form-textarea" placeholder="Any specific notes about this assignment…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger btn-sm hidden" id="task-delete-btn">Delete</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" data-close="modal-task">Cancel</button>
+        <button class="btn btn-primary" id="task-save-btn">Add Assignment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task Detail Modal -->
+  <div class="modal-overlay hidden" id="modal-task-detail">
+    <div class="modal modal-md">
+      <div class="modal-header">
+        <h2>Assignment Detail</h2>
+        <button class="modal-close" data-close="modal-task-detail">✕</button>
+      </div>
+      <div class="modal-body" id="task-detail-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-danger btn-sm" id="detail-delete-btn">Delete</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" data-close="modal-task-detail">Close</button>
+        <button class="btn btn-secondary" id="detail-edit-btn">Edit</button>
+        <button class="btn btn-success" id="detail-complete-btn">✓ Mark Complete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Check-in Modal -->
+  <div class="modal-overlay hidden" id="modal-checkin">
+    <div class="modal modal-md">
+      <div class="modal-header">
+        <h2 id="checkin-modal-title">Daily Check-in</h2>
+        <button class="modal-close" data-close="modal-checkin">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted text-sm mb-4">How did <span id="checkin-date-label">yesterday</span> go? Mark each task and enter actual hours spent.</p>
+        <div id="checkin-tasks-list"></div>
+        <div id="checkin-no-tasks" class="hidden" style="color:var(--muted);font-size:.857rem;padding:20px 0;text-align:center;">
+          No tasks were scheduled for yesterday. Nothing to check in!
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="modal-checkin">Skip</button>
+        <button class="btn btn-primary" id="checkin-submit-btn">Save Check-in</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conflict Resolver Modal -->
+  <div class="modal-overlay hidden" id="modal-conflict">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2>⚡ Conflict Resolver</h2>
+        <button class="modal-close" data-close="modal-conflict">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted text-sm mb-4">DeadlineOS is analyzing your schedule and conflicts…</p>
+        <div class="stream-box" id="conflict-stream-box">
+          <span id="conflict-stream-text"></span><span class="stream-cursor hidden" id="conflict-cursor"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="modal-conflict">Close</button>
+        <button class="btn btn-primary" id="conflict-retry-btn">Regenerate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay hidden" id="modal-settings">
+    <div class="modal modal-md">
+      <div class="modal-header">
+        <h2>⚙ Settings</h2>
+        <button class="modal-close" data-close="modal-settings">✕</button>
+      </div>
+      <div class="modal-body" id="settings-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-danger btn-sm" id="reset-data-btn">Reset All Data</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" data-close="modal-settings">Cancel</button>
+        <button class="btn btn-primary" id="settings-save-btn">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding Modal -->
+  <div class="modal-overlay hidden" id="modal-onboarding">
+    <div class="modal modal-md">
+      <div class="modal-header">
+        <h2 id="onboarding-title">Welcome to DeadlineOS</h2>
+        <div class="onboarding-steps" id="onboarding-steps-indicator" style="flex:1;margin:0 20px;"></div>
+      </div>
+      <div class="modal-body" id="onboarding-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost hidden" id="onboarding-back-btn">← Back</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-primary" id="onboarding-next-btn">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shortcuts Modal -->
+  <div class="modal-overlay hidden" id="modal-shortcuts">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2>Keyboard Shortcuts</h2>
+        <button class="modal-close" data-close="modal-shortcuts">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="shortcuts-grid">
+          <kbd>N</kbd><span>New assignment</span>
+          <kbd>C</kbd><span>Open check-in</span>
+          <kbd>?</kbd><span>Show shortcuts</span>
+          <kbd>Esc</kbd><span>Close modal</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <!-- Main application -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
